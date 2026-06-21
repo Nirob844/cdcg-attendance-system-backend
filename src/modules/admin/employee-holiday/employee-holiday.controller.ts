@@ -24,6 +24,12 @@ export class EmployeeHolidayController {
     return this.service.findAll(query);
   }
 
+  @Get('employee/:user_id')
+  @Roles(Role.EMPLOYEE, Role.ADMIN)
+  findEmployeeHolidays(@Param('user_id') user_id: string) {
+    return this.service.findEmployeeHolidays(user_id);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.service.findOne(id);

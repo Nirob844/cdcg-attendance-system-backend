@@ -92,6 +92,44 @@ export class EmployeeHolidayService {
     }
   }
 
+  async findEmployeeHolidays(user_id: string) {
+    try {
+      const data = await this.prisma.employeeHoliday.findMany({
+        where: { user_id },
+        orderBy: { start_date: 'desc' },
+        select: {
+          id: true,
+          user_id: true,
+          start_date: true,
+          end_date: true,
+          user: {
+            select: {
+              id: true,
+              first_name: true,
+              last_name: true,
+              name: true,
+              email: true,
+              avatar: true,
+              employee_role: true,
+            },
+          },
+        },
+      });
+
+      const dataWithTotalDays = data.map(item => ({
+        ...item,
+        total_days: Math.ceil(
+          (new Date(item.end_date).getTime() - new Date(item.start_date).getTime()) / (1000 * 60 * 60 * 24) + 1
+        ),
+        user: FileUrlHelper.addAvatarUrl(item.user),
+      }));
+
+      return { success: true, data: dataWithTotalDays };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
   async findOne(id: string) {
     try {
       const data = await this.prisma.employeeHoliday.findUnique({
