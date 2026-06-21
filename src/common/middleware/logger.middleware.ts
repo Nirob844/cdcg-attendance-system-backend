@@ -65,11 +65,11 @@ function inlinePayload(value: unknown, indent = 2): string {
   if (!json || json === '{}' || json === '[]' || json === 'null') return '';
   return json
     .split('\n')
-    .map((l) => paint(c.dim, c.gray, '  ' + l))
+    .map((l) => paint(c.gray, '  ' + l))
     .join('\n');
 }
 
-const SEP = paint(c.dim, c.gray, '─'.repeat(72));
+const SEP = paint(c.gray, '─'.repeat(72));
 
 // ─── Field type ───────────────────────────────────────────────────────────────
 interface LogFields {
