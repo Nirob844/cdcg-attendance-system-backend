@@ -15,6 +15,10 @@ export class EmployeeHolidayQueryDto {
 
     @IsOptional()
     @IsNumberString()
+    year?: string;
+
+    @IsOptional()
+    @IsNumberString()
     page?: string;
 
     @IsOptional()

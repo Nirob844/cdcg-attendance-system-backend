@@ -30,6 +30,7 @@ export class EmployeeHolidayService {
         user_id,
         start_date,
         end_date,
+        year,
         page = '1',
         limit = '10',
       } = query;
@@ -42,6 +43,16 @@ export class EmployeeHolidayService {
       if (user_id) where.user_id = user_id;
       if (start_date) where.start_date = { gte: new Date(start_date) };
       if (end_date) where.end_date = { lte: new Date(end_date) };
+      if (year) {
+        const yearNumber = parseInt(year, 10);
+        const yearStartDate = new Date(Date.UTC(yearNumber, 0, 1));
+        const yearEndDate = new Date(Date.UTC(yearNumber, 11, 31, 23, 59, 59, 999));
+        where.OR = [
+          { start_date: { gte: yearStartDate, lte: yearEndDate } },
+          { end_date: { gte: yearStartDate, lte: yearEndDate } },
+          { start_date: { lte: yearStartDate }, end_date: { gte: yearEndDate } },
+        ];
+      }
 
       const total = await this.prisma.employeeHoliday.count({ where });
 
@@ -92,10 +103,21 @@ export class EmployeeHolidayService {
     }
   }
 
-  async findEmployeeHolidays(user_id: string) {
+  async findEmployeeHolidays(user_id: string, year?: string) {
     try {
+      const where: any = { user_id };
+      if (year) {
+        const yearNumber = parseInt(year, 10);
+        const yearStartDate = new Date(Date.UTC(yearNumber, 0, 1));
+        const yearEndDate = new Date(Date.UTC(yearNumber, 11, 31, 23, 59, 59, 999));
+        where.OR = [
+          { start_date: { gte: yearStartDate, lte: yearEndDate } },
+          { end_date: { gte: yearStartDate, lte: yearEndDate } },
+          { start_date: { lte: yearStartDate }, end_date: { gte: yearEndDate } },
+        ];
+      }
       const data = await this.prisma.employeeHoliday.findMany({
-        where: { user_id },
+        where,
         orderBy: { start_date: 'desc' },
         select: {
           id: true,
