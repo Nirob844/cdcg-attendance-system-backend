@@ -506,6 +506,8 @@ model Attendance {
   lunch_end         DateTime?
   end_time          DateTime?
   hours             Decimal           @default(0) // Number of hours worked that day
+  regular_hours     Decimal           @default(0) // Regular hours (up to 8 hours)
+  extra_hours       Decimal           @default(0) // Extra/overtime hours (any hours above 8)
   attendance_status AttendanceStatus? @default(PRESENT)
   notes             String?           @db.Text
 

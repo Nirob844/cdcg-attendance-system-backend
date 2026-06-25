@@ -20,7 +20,7 @@ export class AuthService {
     private jwtService: JwtService,
     private prisma: PrismaService,
     private mailService: MailService,
-  ) { }
+  ) {}
 
   async me(userId: string) {
     try {
@@ -122,7 +122,6 @@ export class AuthService {
         data.date_of_birth = DateHelper.format(updateUserDto.date_of_birth);
       }
       if (image) {
-
         // delete old image from storage
         const oldImage = await this.prisma.user.findFirst({
           where: { id: userId },
@@ -144,7 +143,10 @@ export class AuthService {
         data.avatar = fileName;
       }
       if (updateUserDto.password) {
-        const hashedPassword = await bcrypt.hash(updateUserDto.password, appConfig().security.salt);
+        const hashedPassword = await bcrypt.hash(
+          updateUserDto.password,
+          appConfig().security.salt,
+        );
         data.password = hashedPassword;
       }
 
@@ -186,8 +188,8 @@ export class AuthService {
         OR: [
           { username: identifier },
           { email: identifier },
-          { phone_number: identifier }
-        ]
+          { phone_number: identifier },
+        ],
       },
     });
 

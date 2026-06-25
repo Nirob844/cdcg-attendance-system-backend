@@ -13,9 +13,10 @@ import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class EmployeeService {
-  constructor(private readonly prisma: PrismaService,
+  constructor(
+    private readonly prisma: PrismaService,
     private readonly mailService: MailService,
-  ) { }
+  ) {}
 
   async create(
     createEmployeeDto: CreateEmployeeDto,
@@ -40,7 +41,8 @@ export class EmployeeService {
       createEmployeeDto.username = username;
 
       // Use password if provided, otherwise use physical_number as password
-      const passwordToUse = createEmployeeDto.password || createEmployeeDto.physical_number;
+      const passwordToUse =
+        createEmployeeDto.password || createEmployeeDto.physical_number;
 
       // Hash password
       const hashedPassword = await bcrypt.hash(
@@ -108,7 +110,9 @@ export class EmployeeService {
         },
       });
 
-      const dataWithUrl = employees.map(emp => FileUrlHelper.addAvatarUrl(emp));
+      const dataWithUrl = employees.map((emp) =>
+        FileUrlHelper.addAvatarUrl(emp),
+      );
       return { success: true, data: dataWithUrl };
     } catch (error) {
       return { success: false, message: error.message };
@@ -117,7 +121,14 @@ export class EmployeeService {
 
   async findAll(query: EmployeeQueryDto) {
     try {
-      const { employee_role, search, page = '1', limit = '10', month, year } = query;
+      const {
+        employee_role,
+        search,
+        page = '1',
+        limit = '10',
+        month,
+        year,
+      } = query;
 
       const pageNumber = parseInt(page, 10) || 1;
       const pageSize = parseInt(limit, 10) || 10;
@@ -171,11 +182,17 @@ export class EmployeeService {
         data.map(async (emp) => {
           // Determine month/year filter: use provided, else default to current month/year
           const now = new Date();
-          const monthNum = month && !isNaN(Number(month)) ? Number(month) : (now.getMonth() + 1);
-          const yearNum = year && !isNaN(Number(year)) ? Number(year) : now.getFullYear();
+          const monthNum =
+            month && !isNaN(Number(month)) ? Number(month) : now.getMonth() + 1;
+          const yearNum =
+            year && !isNaN(Number(year)) ? Number(year) : now.getFullYear();
           // Use UTC to avoid timezone issues and ensure month boundaries are correct
-          const startDate = new Date(Date.UTC(yearNum, monthNum - 1, 1, 0, 0, 0, 0));
-          const endDate = new Date(Date.UTC(yearNum, monthNum, 0, 23, 59, 59, 999));
+          const startDate = new Date(
+            Date.UTC(yearNum, monthNum - 1, 1, 0, 0, 0, 0),
+          );
+          const endDate = new Date(
+            Date.UTC(yearNum, monthNum, 0, 23, 59, 59, 999),
+          );
           const dateFilter: any = { gte: startDate, lte: endDate };
 
           const agg = await this.prisma.attendance.aggregate({
@@ -184,16 +201,20 @@ export class EmployeeService {
               deleted_at: null,
               date: dateFilter,
             },
-            _sum: { hours: true },
+            _sum: { hours: true, regular_hours: true, extra_hours: true },
           });
-          const recorded_hours = Number(agg._sum.hours) || 0;
-          const earning = recorded_hours * Number(emp.hourly_rate || 0);
+          const total_hours = Number(agg._sum.hours) || 0;
+          const recorded_hours = Number(agg._sum.regular_hours) || 0;
+          const extra_hours = Number(agg._sum.extra_hours) || 0;
+          const earning = total_hours * Number(emp.hourly_rate || 0);
 
           // Do not update stored totals here since view is month-scoped
 
           return FileUrlHelper.addAvatarUrl({
             ...emp,
             recorded_hours,
+            extra_hours,
+            total_hours,
             earning,
           });
         }),
@@ -218,11 +239,15 @@ export class EmployeeService {
     try {
       // Month/year window: use provided if available else current
       const now = new Date();
-      const monthNum = month && !isNaN(Number(month)) ? Number(month) : (now.getMonth() + 1);
-      const yearNum = year && !isNaN(Number(year)) ? Number(year) : now.getFullYear();
+      const monthNum =
+        month && !isNaN(Number(month)) ? Number(month) : now.getMonth() + 1;
+      const yearNum =
+        year && !isNaN(Number(year)) ? Number(year) : now.getFullYear();
       // Show only current month data (no previous month)
       // Use UTC dates to avoid timezone issues
-      const startDate = new Date(Date.UTC(yearNum, monthNum - 1, 1, 0, 0, 0, 0)); // First day of current month in UTC
+      const startDate = new Date(
+        Date.UTC(yearNum, monthNum - 1, 1, 0, 0, 0, 0),
+      ); // First day of current month in UTC
       const endDate = new Date(Date.UTC(yearNum, monthNum, 0, 23, 59, 59, 999)); // Last day of current month in UTC
 
       const emp = await this.prisma.user.findUnique({
@@ -261,6 +286,8 @@ export class EmployeeService {
             select: {
               id: true,
               hours: true,
+              regular_hours: true,
+              extra_hours: true,
               date: true,
               attendance_status: true,
               start_time: true,
@@ -283,11 +310,15 @@ export class EmployeeService {
       if (!emp) return { success: false, message: 'Employee not found' };
 
       // Get unique project IDs from attendance records in this month
-      const attendedProjectIds = [...new Set(emp.attendance.map(att => att.project?.id).filter(Boolean))];
+      const attendedProjectIds = [
+        ...new Set(
+          emp.attendance.map((att) => att.project?.id).filter(Boolean),
+        ),
+      ];
 
       // Filter projectAssignee to only include projects with attendance in this month
-      const filteredProjectAssignee = emp.projectAssignee.filter(assignee =>
-        attendedProjectIds.includes(assignee.project.id)
+      const filteredProjectAssignee = emp.projectAssignee.filter((assignee) =>
+        attendedProjectIds.includes(assignee.project.id),
       );
 
       // Calculate month-specific totals for each project
@@ -309,19 +340,27 @@ export class EmployeeService {
             total_hours: monthHours,
             total_cost: monthCost,
           };
-        })
+        }),
       );
 
       const agg = await this.prisma.attendance.aggregate({
-        where: { user_id: emp.id, deleted_at: null, date: { gte: startDate, lte: endDate } },
-        _sum: { hours: true },
+        where: {
+          user_id: emp.id,
+          deleted_at: null,
+          date: { gte: startDate, lte: endDate },
+        },
+        _sum: { hours: true, regular_hours: true, extra_hours: true },
       });
-      const recorded_hours = Number(agg._sum.hours) || 0;
-      const earning = recorded_hours * Number(emp.hourly_rate || 0);
+      const total_hours = Number(agg._sum.hours) || 0;
+      const recorded_hours = Number(agg._sum.regular_hours) || 0;
+      const extra_hours = Number(agg._sum.extra_hours) || 0;
+      const earning = total_hours * Number(emp.hourly_rate || 0);
       const dataWithUrl = FileUrlHelper.addAvatarUrl({
         ...emp,
         projectAssignee: projectAssigneeWithMonthTotals,
         recorded_hours,
+        extra_hours,
+        total_hours,
         earning,
       });
       return { success: true, data: dataWithUrl };
@@ -408,7 +447,9 @@ export class EmployeeService {
    * Auto-assign employee to all active projects (status = 1)
    * @param employeeId - The ID of the employee to assign
    */
-  private async assignEmployeeToActiveProjects(employeeId: string): Promise<void> {
+  private async assignEmployeeToActiveProjects(
+    employeeId: string,
+  ): Promise<void> {
     try {
       // Find all active projects (status = 1)
       const activeProjects = await this.prisma.project.findMany({
@@ -422,7 +463,7 @@ export class EmployeeService {
       });
 
       // Create project assignments for each active project
-      const assignments = activeProjects.map(project => ({
+      const assignments = activeProjects.map((project) => ({
         projectId: project.id,
         userId: employeeId,
         total_hours: 0,

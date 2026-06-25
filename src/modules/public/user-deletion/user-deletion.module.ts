@@ -4,8 +4,8 @@ import { UserDeletionController } from './user-deletion.controller';
 import { PrismaModule } from '../../../prisma/prisma.module';
 
 @Module({
-    imports: [PrismaModule],
-    controllers: [UserDeletionController],
-    providers: [UserDeletionService],
+  imports: [PrismaModule],
+  controllers: [UserDeletionController],
+  providers: [UserDeletionService],
 })
-export class UserDeletionModule { }
+export class UserDeletionModule {}

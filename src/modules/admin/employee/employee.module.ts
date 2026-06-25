@@ -12,4 +12,4 @@ import { AuthModule } from 'src/modules/auth/auth.module';
   providers: [EmployeeService],
   exports: [EmployeeService],
 })
-export class EmployeeModule { }
+export class EmployeeModule {}

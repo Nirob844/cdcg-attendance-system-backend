@@ -7,7 +7,7 @@ import { FileUrlHelper } from 'src/common/helper/file-url.helper';
 
 @Injectable()
 export class EmployeeHolidayService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateEmployeeHolidayDto) {
     try {
@@ -46,11 +46,16 @@ export class EmployeeHolidayService {
       if (year) {
         const yearNumber = parseInt(year, 10);
         const yearStartDate = new Date(Date.UTC(yearNumber, 0, 1));
-        const yearEndDate = new Date(Date.UTC(yearNumber, 11, 31, 23, 59, 59, 999));
+        const yearEndDate = new Date(
+          Date.UTC(yearNumber, 11, 31, 23, 59, 59, 999),
+        );
         where.OR = [
           { start_date: { gte: yearStartDate, lte: yearEndDate } },
           { end_date: { gte: yearStartDate, lte: yearEndDate } },
-          { start_date: { lte: yearStartDate }, end_date: { gte: yearEndDate } },
+          {
+            start_date: { lte: yearStartDate },
+            end_date: { gte: yearEndDate },
+          },
         ];
       }
 
@@ -80,10 +85,13 @@ export class EmployeeHolidayService {
         },
       });
 
-      const dataWithTotalDays = data.map(item => ({
+      const dataWithTotalDays = data.map((item) => ({
         ...item,
         total_days: Math.ceil(
-          (new Date(item.end_date).getTime() - new Date(item.start_date).getTime()) / (1000 * 60 * 60 * 24) + 1
+          (new Date(item.end_date).getTime() -
+            new Date(item.start_date).getTime()) /
+            (1000 * 60 * 60 * 24) +
+            1,
         ),
         user: FileUrlHelper.addAvatarUrl(item.user),
       }));
@@ -109,11 +117,16 @@ export class EmployeeHolidayService {
       if (year) {
         const yearNumber = parseInt(year, 10);
         const yearStartDate = new Date(Date.UTC(yearNumber, 0, 1));
-        const yearEndDate = new Date(Date.UTC(yearNumber, 11, 31, 23, 59, 59, 999));
+        const yearEndDate = new Date(
+          Date.UTC(yearNumber, 11, 31, 23, 59, 59, 999),
+        );
         where.OR = [
           { start_date: { gte: yearStartDate, lte: yearEndDate } },
           { end_date: { gte: yearStartDate, lte: yearEndDate } },
-          { start_date: { lte: yearStartDate }, end_date: { gte: yearEndDate } },
+          {
+            start_date: { lte: yearStartDate },
+            end_date: { gte: yearEndDate },
+          },
         ];
       }
       const data = await this.prisma.employeeHoliday.findMany({
@@ -138,10 +151,13 @@ export class EmployeeHolidayService {
         },
       });
 
-      const dataWithTotalDays = data.map(item => ({
+      const dataWithTotalDays = data.map((item) => ({
         ...item,
         total_days: Math.ceil(
-          (new Date(item.end_date).getTime() - new Date(item.start_date).getTime()) / (1000 * 60 * 60 * 24) + 1
+          (new Date(item.end_date).getTime() -
+            new Date(item.start_date).getTime()) /
+            (1000 * 60 * 60 * 24) +
+            1,
         ),
         user: FileUrlHelper.addAvatarUrl(item.user),
       }));
@@ -177,7 +193,10 @@ export class EmployeeHolidayService {
       if (data) {
         Object.assign(data, {
           total_days: Math.ceil(
-            (new Date(data.end_date).getTime() - new Date(data.start_date).getTime()) / (1000 * 60 * 60 * 24) + 1
+            (new Date(data.end_date).getTime() -
+              new Date(data.start_date).getTime()) /
+              (1000 * 60 * 60 * 24) +
+              1,
           ),
           user: FileUrlHelper.addAvatarUrl(data.user),
         });

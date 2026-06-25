@@ -9,7 +9,7 @@ export class MailService {
   constructor(
     @InjectQueue('mail-queue') private queue: Queue,
     private mailerService: MailerService,
-  ) { }
+  ) {}
 
   async sendMemberInvitation({ user, member, url }) {
     try {
@@ -85,7 +85,6 @@ export class MailService {
     username: string;
     password: string;
   }) {
-
     try {
       const from = `${process.env.APP_NAME} <${appConfig().mail.from}>`;
       const subject = 'Welcome to the Company - Your Login Credentials';
@@ -102,7 +101,6 @@ export class MailService {
           password: params.password,
         },
       });
-
     } catch (error) {
       console.log(error);
     }

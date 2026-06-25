@@ -1,40 +1,34 @@
-import {
-    Controller,
-    Get,
-    Delete,
-    Body,
-} from '@nestjs/common';
+import { Controller, Get, Delete, Body } from '@nestjs/common';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UserDeletionService } from './user-deletion.service';
 
 @ApiTags('Public User Deletion')
 @Controller('app/users')
 export class UserDeletionController {
-    constructor(private readonly userDeletionService: UserDeletionService) { }
+  constructor(private readonly userDeletionService: UserDeletionService) {}
 
-    @ApiResponse({ description: 'Delete user account by email and password' })
-    @Delete('delete-users')
-    async deleteUserByEmailPassword(
-        @Body() body: { email: string; password: string }
-    ) {
-        try {
-            const result = await this.userDeletionService.deleteUserByEmailPassword(
-                body.email,
-                body.password
-            );
-            return result;
-        } catch (error) {
-            return {
-                success: false,
-                message: error.message,
-            };
-        }
+  @ApiResponse({ description: 'Delete user account by email and password' })
+  @Delete('delete-users')
+  async deleteUserByEmailPassword(
+    @Body() body: { email: string; password: string },
+  ) {
+    try {
+      const result = await this.userDeletionService.deleteUserByEmailPassword(
+        body.email,
+        body.password,
+      );
+      return result;
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message,
+      };
     }
+  }
 
-    @Get('delete-account')
-    deleteAccountPage() {
-
-        const html = `<!DOCTYPE html>
+  @Get('delete-account')
+  deleteAccountPage() {
+    const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -460,6 +454,6 @@ export class UserDeletionController {
 </body>
 </html>`;
 
-        return html;
-    }
+    return html;
+  }
 }

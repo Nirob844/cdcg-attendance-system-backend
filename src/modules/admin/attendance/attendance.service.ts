@@ -58,7 +58,6 @@ export class AttendanceService {
 
   async create(dto: CreateAttendanceDto) {
     try {
-   
       // check if project id
       if (!dto.project_id) {
         return { success: false, message: 'Project is required.' };
@@ -116,6 +115,8 @@ export class AttendanceService {
               }
               hours = Math.max(0, hours);
             }
+            const regular_hours = hours > 8 ? 8 : hours;
+            const extra_hours = hours > 8 ? hours - 8 : 0;
             const updated = await this.prisma.attendance.update({
               where: { id: existing.id },
               data: {
@@ -126,6 +127,8 @@ export class AttendanceService {
                 lunch_start,
                 lunch_end,
                 hours,
+                regular_hours,
+                extra_hours,
                 notes: dto.notes,
                 address: dto.address,
               },
@@ -185,6 +188,9 @@ export class AttendanceService {
           hours = Math.max(0, hours);
         }
 
+        const regular_hours = hours > 8 ? 8 : hours;
+        const extra_hours = hours > 8 ? hours - 8 : 0;
+
         const attendance = await this.prisma.attendance.create({
           data: {
             user_id: dto.user_id,
@@ -195,6 +201,8 @@ export class AttendanceService {
             lunch_end,
             end_time,
             hours,
+            regular_hours,
+            extra_hours,
             attendance_status: dto.attendance_status,
             notes: dto.notes,
             address: dto.address,
@@ -227,6 +235,8 @@ export class AttendanceService {
             date: this.parseDateOnly(dto.date),
             attendance_status: dto.attendance_status,
             hours: 0,
+            regular_hours: 0,
+            extra_hours: 0,
             notes: dto.notes,
             address: dto.address,
           },
@@ -314,6 +324,8 @@ export class AttendanceService {
           project_id: true,
           date: true,
           hours: true,
+          regular_hours: true,
+          extra_hours: true,
           attendance_status: true,
         },
       });
@@ -324,6 +336,8 @@ export class AttendanceService {
           [key: string]: {
             id: string;
             hours: number;
+            regular_hours: number;
+            extra_hours: number;
             attendance_status: AttendanceStatus;
             project_id: string;
           } | null;
@@ -345,6 +359,8 @@ export class AttendanceService {
               days[dateStr] = {
                 id: a.id,
                 hours: Number(a.hours),
+                regular_hours: Number(a.regular_hours || 0),
+                extra_hours: Number(a.extra_hours || 0),
                 attendance_status: a.attendance_status as AttendanceStatus,
                 project_id: a.project_id,
               };
@@ -417,6 +433,8 @@ export class AttendanceService {
           lunch_end: true,
           end_time: true,
           hours: true,
+          regular_hours: true,
+          extra_hours: true,
         },
       });
       // Map date string (YYYY-MM-DD) to record
@@ -431,6 +449,8 @@ export class AttendanceService {
         const dateStr = `${year}-${month.padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
         const rec = recordMap[dateStr];
         const hours = rec?.hours ? Number(rec.hours) : 0;
+        const regular_hours = rec?.regular_hours ? Number(rec.regular_hours) : 0;
+        const extra_hours = rec?.extra_hours ? Number(rec.extra_hours) : 0;
         const earning = hours * hourlyRate;
         result.push({
           id: rec?.id || null,
@@ -445,6 +465,8 @@ export class AttendanceService {
           end_time: rec?.end_time
             ? rec.end_time.toISOString().slice(11, 16)
             : '----',
+          recorded_hours: regular_hours,
+          extra_hours: extra_hours,
           total: rec?.hours ? `${hours.toFixed(1)} hrs` : 'No Record',
           earning: hours ? `${earning.toFixed(2)}` : '0.00',
         });
@@ -610,6 +632,9 @@ export class AttendanceService {
           hours = 0;
         }
 
+        const regular_hours = hours > 8 ? 8 : hours;
+        const extra_hours = hours > 8 ? hours - 8 : 0;
+
         const data = await this.prisma.attendance.create({
           data: {
             user_id: dto.user_id,
@@ -620,6 +645,8 @@ export class AttendanceService {
             lunch_end,
             end_time,
             hours,
+            regular_hours,
+            extra_hours,
             attendance_status,
             notes: dto.notes,
             address: dto.address,
@@ -675,6 +702,23 @@ export class AttendanceService {
       const lunch_end = isPresent ? this.parseDateTime(dto.lunch_end) : null;
       const end_time = isPresent ? this.parseDateTime(dto.end_time) : null;
 
+      // Calculate hours if possible
+      let hours = dto.hours || 0;
+      if (isPresent && start_time && end_time) {
+        hours =
+          (end_time.getTime() - start_time.getTime()) / (1000 * 60 * 60);
+        if (lunch_start && lunch_end) {
+          hours -=
+            (lunch_end.getTime() - lunch_start.getTime()) / (1000 * 60 * 60);
+        }
+        hours = Math.max(0, hours);
+      } else if (!isPresent) {
+        hours = 0;
+      }
+
+      const regular_hours = hours > 8 ? 8 : hours;
+      const extra_hours = hours > 8 ? hours - 8 : 0;
+
       const data = await this.prisma.attendance.update({
         where: { id },
         data: {
@@ -684,6 +728,9 @@ export class AttendanceService {
           lunch_start,
           lunch_end,
           end_time,
+          hours,
+          regular_hours,
+          extra_hours,
         },
         include: {
           user: {

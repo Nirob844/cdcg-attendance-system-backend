@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ProjectService } from './project.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
@@ -9,10 +19,10 @@ import { Role } from 'src/common/guard/role/role.enum';
 import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.ADMIN,Role.EMPLOYEE)
+@Roles(Role.ADMIN, Role.EMPLOYEE)
 @Controller('project')
 export class ProjectController {
-  constructor(private readonly projectService: ProjectService) { }
+  constructor(private readonly projectService: ProjectService) {}
 
   @Post()
   create(@Body() dto: CreateProjectDto) {

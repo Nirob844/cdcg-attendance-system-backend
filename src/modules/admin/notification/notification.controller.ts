@@ -1,4 +1,13 @@
-import { Controller, Get, Param, Delete, UseGuards, Req, Patch, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Delete,
+  UseGuards,
+  Req,
+  Patch,
+  Body,
+} from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role } from '../../../common/guard/role/role.enum';
@@ -33,11 +42,14 @@ export class NotificationController {
     }
   }
 
-    // Admin: Update loan
-    @Patch(':id')
-    update(@Param('id') id: string, @Body() dto: { status: string, notes?: string }) {
-      return this.notificationService.update(id, dto.status, dto.notes);
-    }
+  // Admin: Update loan
+  @Patch(':id')
+  update(
+    @Param('id') id: string,
+    @Body() dto: { status: string; notes?: string },
+  ) {
+    return this.notificationService.update(id, dto.status, dto.notes);
+  }
 
   @ApiOperation({ summary: 'Delete notification' })
   @Delete(':id')

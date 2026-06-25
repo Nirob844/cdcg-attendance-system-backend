@@ -1,17 +1,17 @@
 import { IsString, IsNumber, IsOptional } from 'class-validator';
 
 export class CreateEmployeeLoanDto {
-    @IsString()
-    user_id: string;
+  @IsString()
+  user_id: string;
 
-    @IsNumber()
-    loan_amount: number;
+  @IsNumber()
+  loan_amount: number;
 
-    @IsOptional()
-    @IsString()
-    loan_purpose?: string;
+  @IsOptional()
+  @IsString()
+  loan_purpose?: string;
 
-    @IsOptional()
-    @IsString()
-    notes?: string;
-} 
+  @IsOptional()
+  @IsString()
+  notes?: string;
+}

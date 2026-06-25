@@ -1,4 +1,14 @@
-import { Controller, Post, Body, Get, Param, Patch, Delete, UseGuards, Query } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Param,
+  Patch,
+  Delete,
+  UseGuards,
+  Query,
+} from '@nestjs/common';
 import { EmployeeLoanService } from './employee-loan.service';
 import { CreateEmployeeLoanDto } from './dto/create-employee-loan.dto';
 import { UpdateEmployeeLoanDto } from './dto/update-employee-loan.dto';
@@ -10,7 +20,7 @@ import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('employee-loan')
 export class EmployeeLoanController {
-  constructor(private readonly employeeLoanService: EmployeeLoanService) { }
+  constructor(private readonly employeeLoanService: EmployeeLoanService) {}
 
   // Employee: Create loan request
   @Post()
@@ -21,7 +31,15 @@ export class EmployeeLoanController {
 
   @Get()
   @Roles(Role.ADMIN)
-  findAllLoans(@Query() query: { page?: string, limit?: string, search?: string, loan_status?: string }) {
+  findAllLoans(
+    @Query()
+    query: {
+      page?: string;
+      limit?: string;
+      search?: string;
+      loan_status?: string;
+    },
+  ) {
     return this.employeeLoanService.findAllLoans(query);
   }
 

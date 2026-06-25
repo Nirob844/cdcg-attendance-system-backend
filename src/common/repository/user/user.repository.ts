@@ -248,7 +248,9 @@ export class UserRepository {
       // Generate base username
       let baseUsername = '';
       if (first_name && last_name) {
-        baseUsername = (first_name[0] + last_name).toLowerCase().replace(/[^a-z0-9]/g, '');
+        baseUsername = (first_name[0] + last_name)
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '');
       } else if (name) {
         baseUsername = name.toLowerCase()[0];
       } else if (email) {

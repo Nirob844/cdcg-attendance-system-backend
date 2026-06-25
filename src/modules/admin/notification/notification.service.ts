@@ -8,7 +8,7 @@ import { LoanStatus } from '@prisma/client';
 
 @Injectable()
 export class NotificationService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async findAll(user_id: string) {
     try {
@@ -68,11 +68,14 @@ export class NotificationService {
           let amount = null;
 
           // If this is a loan notification, fetch the loan amount
-          if (notification.entity_id && notification.notification_event?.text?.includes('loan request')) {
+          if (
+            notification.entity_id &&
+            notification.notification_event?.text?.includes('loan request')
+          ) {
             try {
               const loan = await this.prisma.employeeLoan.findUnique({
                 where: { id: notification.entity_id },
-                select: { loan_amount: true }
+                select: { loan_amount: true },
               });
               amount = loan?.loan_amount || null;
             } catch (error) {
@@ -85,7 +88,9 @@ export class NotificationService {
             sender_id: notification.sender_id,
             sender_name: notification.sender?.name || 'Unknown',
             sender_image: notification.sender?.avatar
-              ? SojebStorage.url(appConfig().storageUrl.avatar + notification.sender.avatar)
+              ? SojebStorage.url(
+                  appConfig().storageUrl.avatar + notification.sender.avatar,
+                )
               : null,
             text: notification.notification_event?.text || 'Notification',
             amount: amount,
@@ -112,7 +117,7 @@ export class NotificationService {
   }
 
   async update(id: string, status: string, notes?: string) {
-    console.log("Updating loan status to: ", status);
+    console.log('Updating loan status to: ', status);
     try {
       const loan = await this.prisma.employeeLoan.update({
         where: { id: id },
@@ -130,7 +135,6 @@ export class NotificationService {
       };
     }
   }
-
 
   async remove(id: string, user_id: string) {
     try {

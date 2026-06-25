@@ -12,13 +12,11 @@ dayjsInstance.extend(timezonePlugin);
 export const APP_TIMEZONE = 'Europe/Lisbon';
 
 export const toUtc = (value?: string | Date) => {
-    if (!value) return undefined;
-    const str = typeof value === 'string' ? value : new Date(value).toISOString();
-    return dayjsInstance.tz(str, APP_TIMEZONE).toDate();
+  if (!value) return undefined;
+  const str = typeof value === 'string' ? value : new Date(value).toISOString();
+  return dayjsInstance.tz(str, APP_TIMEZONE).toDate();
 };
 
 export const toLisbon = (value: string | Date) => {
-    return dayjsInstance(value).tz(APP_TIMEZONE).toDate();
+  return dayjsInstance(value).tz(APP_TIMEZONE).toDate();
 };
-
-

@@ -7,7 +7,7 @@ import { FileUrlHelper } from 'src/common/helper/file-url.helper';
 
 @Injectable()
 export class ProjectService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateProjectDto) {
     try {
@@ -18,9 +18,9 @@ export class ProjectService {
       if (!assignees || assignees.length === 0) {
         const allEmployees = await this.prisma.user.findMany({
           where: { type: 'employee', deleted_at: null },
-          select: { id: true }
+          select: { id: true },
         });
-        finalAssignees = allEmployees.map(emp => emp.id);
+        finalAssignees = allEmployees.map((emp) => emp.id);
       }
 
       const project = await this.prisma.project.create({
@@ -34,9 +34,9 @@ export class ProjectService {
           priority: dto.priority,
           ...(userId && { userId }),
           assignees: {
-            create: finalAssignees.map(userId => ({
-              user: { connect: { id: userId } }
-            }))
+            create: finalAssignees.map((userId) => ({
+              user: { connect: { id: userId } },
+            })),
           },
         },
         include: { assignees: true },
@@ -50,13 +50,7 @@ export class ProjectService {
 
   async findAll(query: ProjectQueryDto) {
     try {
-      const {
-        search,
-        priority,
-        status,
-        page = '1',
-        limit = '10',
-      } = query;
+      const { search, priority, status, page = '1', limit = '10' } = query;
 
       const pageNumber = parseInt(page, 10) || 1;
       const pageSize = parseInt(limit, 10) || 10;
@@ -106,9 +100,9 @@ export class ProjectService {
       });
 
       // Add avatarUrl to each assignee's user
-      const dataWithAvatarUrl = data.map(project => ({
+      const dataWithAvatarUrl = data.map((project) => ({
         ...project,
-        assignees: project.assignees.map(a => ({
+        assignees: project.assignees.map((a) => ({
           ...a,
           user: FileUrlHelper.addAvatarUrl(a.user),
         })),
@@ -196,7 +190,6 @@ export class ProjectService {
     }
   }
 
-
   async update(id: string, dto: UpdateProjectDto) {
     try {
       const { assignees, userId, ...rest } = dto;
@@ -211,8 +204,8 @@ export class ProjectService {
       if (assignees) {
         data.assignees = {
           deleteMany: {}, // remove all previous
-          create: assignees.map(userId => ({
-            user: { connect: { id: userId } }
+          create: assignees.map((userId) => ({
+            user: { connect: { id: userId } },
           })),
         };
       }

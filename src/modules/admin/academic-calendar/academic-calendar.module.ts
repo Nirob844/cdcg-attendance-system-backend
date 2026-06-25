@@ -9,4 +9,4 @@ import { GoogleCalendarService } from 'src/common/lib/calendar/GoogleCalendarSer
   controllers: [AcademicCalendarController],
   providers: [AcademicCalendarService, GoogleCalendarService],
 })
-export class AcademicCalendarModule { }
+export class AcademicCalendarModule {}

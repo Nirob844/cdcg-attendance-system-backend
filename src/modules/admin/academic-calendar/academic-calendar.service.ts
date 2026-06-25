@@ -9,10 +9,9 @@ export class AcademicCalendarService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly googleCalendar: GoogleCalendarService,
-  ) { }
+  ) {}
 
   async createEvent(dto: CreateAcademicCalendarDto) {
-
     if (!dto.end_date) {
       dto.end_date = dto.start_date;
     }
@@ -55,7 +54,7 @@ export class AcademicCalendarService {
     const holidays = await this.googleCalendar.listEvents(
       'pt.portuguese#holiday@group.v.calendar.google.com',
       startDate,
-      endDate
+      endDate,
     );
 
     // 3. Return both in the response
@@ -69,22 +68,26 @@ export class AcademicCalendarService {
   }
 
   async updateEvent(id: string, updates: UpdateAcademicCalendarDto) {
-    const event = await this.prisma.academicCalendar.findUnique({ where: { id } });
+    const event = await this.prisma.academicCalendar.findUnique({
+      where: { id },
+    });
     if (!event) throw new Error('Event not found');
 
     // Update Google Calendar event if exists
     if (event.google_event_id) {
-      await this.googleCalendar.updateEvent(
-        'primary',
-        event.google_event_id,
-        {
-          summary: updates.title ?? event.title,
-          description: updates.description ?? event.description,
-          start: { dateTime: new Date(updates.start_date ?? event.start_date).toISOString() },
-          end: { dateTime: new Date(updates.end_date ?? event.end_date).toISOString() },
-          location: updates.location ?? event.location,
-        }
-      );
+      await this.googleCalendar.updateEvent('primary', event.google_event_id, {
+        summary: updates.title ?? event.title,
+        description: updates.description ?? event.description,
+        start: {
+          dateTime: new Date(
+            updates.start_date ?? event.start_date,
+          ).toISOString(),
+        },
+        end: {
+          dateTime: new Date(updates.end_date ?? event.end_date).toISOString(),
+        },
+        location: updates.location ?? event.location,
+      });
     }
 
     // Update database record
@@ -100,7 +103,9 @@ export class AcademicCalendarService {
   }
 
   async deleteEvent(id: string) {
-    const event = await this.prisma.academicCalendar.findUnique({ where: { id } });
+    const event = await this.prisma.academicCalendar.findUnique({
+      where: { id },
+    });
     if (!event) throw new Error('Event not found');
 
     // Delete from Google Calendar if exists
@@ -126,7 +131,7 @@ export class AcademicCalendarService {
     const holidays = await this.googleCalendar.listEvents(
       'pt.portuguese#holiday@group.v.calendar.google.com',
       startDate,
-      endDate
+      endDate,
     );
 
     // 3. Combine and return in { success, data } format

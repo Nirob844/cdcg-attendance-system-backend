@@ -24,10 +24,11 @@ import { ChatRepository } from '../../../common/repository/chat/chat.repository'
 })
 export class MessageGateway
   implements
-  OnGatewayInit,
-  OnGatewayConnection,
-  OnGatewayDisconnect,
-  OnModuleInit {
+    OnGatewayInit,
+    OnGatewayConnection,
+    OnGatewayDisconnect,
+    OnModuleInit
+{
   @WebSocketServer()
   server: Server;
 
@@ -48,7 +49,7 @@ export class MessageGateway
   public clients = new Map<string, string>(); // userId -> socketId
   private activeUsers = new Map<string, string>(); // username -> socketId
 
-  onModuleInit() { }
+  onModuleInit() {}
 
   afterInit(server: Server) {
     console.log('Websocket server started');

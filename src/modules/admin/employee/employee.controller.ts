@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UploadedFile, UseInterceptors, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UploadedFile,
+  UseInterceptors,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { EmployeeService } from './employee.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
@@ -13,7 +25,7 @@ import { Role } from 'src/common/guard/role/role.enum';
 @Roles(Role.ADMIN)
 @Controller('employee')
 export class EmployeeController {
-  constructor(private readonly employeeService: EmployeeService) { }
+  constructor(private readonly employeeService: EmployeeService) {}
 
   @Post()
   @UseInterceptors(FileInterceptor('file'))
@@ -35,7 +47,10 @@ export class EmployeeController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string, @Query() query: { month?: string; year?: string }) {
+  findOne(
+    @Param('id') id: string,
+    @Query() query: { month?: string; year?: string },
+  ) {
     return this.employeeService.findOne(id, query?.month, query?.year);
   }
 

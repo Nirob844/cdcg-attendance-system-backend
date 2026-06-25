@@ -6,10 +6,9 @@ import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guard/role/roles.guard';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-
 @Controller('dashboard')
 export class DashboardController {
-  constructor(private readonly dashboardService: DashboardService) { }
+  constructor(private readonly dashboardService: DashboardService) {}
 
   @Get('summary')
   @Roles(Role.ADMIN)
@@ -27,8 +26,8 @@ export class DashboardController {
   @Roles(Role.ADMIN)
   getAttendanceReport(
     @Query('start') start: string, // can be month or date
-    @Query('end') end?: string,    // optional
-    @Query('year') year?: string,  // optional
+    @Query('end') end?: string, // optional
+    @Query('year') year?: string, // optional
     @Query('project_id') project_id?: string, // <-- add this line
   ) {
     // If only month is provided (e.g., start = '06'), use current year
@@ -39,16 +38,31 @@ export class DashboardController {
       const firstDay = `${yearToUse}-${month}-01`;
       const lastDay = new Date(Number(yearToUse), Number(month), 0); // last day of month
       const lastDayStr = `${yearToUse}-${month}-${lastDay.getDate().toString().padStart(2, '0')}`;
-      return this.dashboardService.getAttendanceReport({ start: firstDay, end: lastDayStr, project_id }); // <-- pass project_id
+      return this.dashboardService.getAttendanceReport({
+        start: firstDay,
+        end: lastDayStr,
+        project_id,
+      }); // <-- pass project_id
     }
     // If both start and end are provided, use as is
-    return this.dashboardService.getAttendanceReport({ start, end, project_id }); // <-- pass project_id
+    return this.dashboardService.getAttendanceReport({
+      start,
+      end,
+      project_id,
+    }); // <-- pass project_id
   }
 
   @Get('employee/:user_id')
   @Roles(Role.ADMIN, Role.EMPLOYEE)
-  getEmployeeDashboard(@Param('user_id') user_id: string, @Query() query: { month?: string; year?: string }) {
-    return this.dashboardService.getEmployeeSummary(user_id, query?.month, query?.year);
+  getEmployeeDashboard(
+    @Param('user_id') user_id: string,
+    @Query() query: { month?: string; year?: string },
+  ) {
+    return this.dashboardService.getEmployeeSummary(
+      user_id,
+      query?.month,
+      query?.year,
+    );
   }
 
   @Get('employee/:user_id/month-summary')
@@ -70,6 +84,10 @@ export class DashboardController {
       return { success: false, message: 'Invalid year parameter.' };
     }
 
-    return this.dashboardService.getEmployeeMonthAttendanceSummary(user_id, month, yearToUse);
+    return this.dashboardService.getEmployeeMonthAttendanceSummary(
+      user_id,
+      month,
+      yearToUse,
+    );
   }
 }

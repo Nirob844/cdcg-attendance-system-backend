@@ -185,7 +185,7 @@ export class DashboardService {
       where: {
         user_id,
         deleted_at: null,
-        date: dateFilter
+        date: dateFilter,
       },
       _sum: { hours: true },
     });

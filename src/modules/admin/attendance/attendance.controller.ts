@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
 import { CreateAttendanceDto } from './dto/create-attendance.dto';
 import { UpdateAttendanceDto } from './dto/update-attendance.dto';
@@ -10,7 +21,7 @@ import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('attendance')
 export class AttendanceController {
-  constructor(private readonly attendanceService: AttendanceService) { }
+  constructor(private readonly attendanceService: AttendanceService) {}
 
   @Post()
   @Roles(Role.EMPLOYEE, Role.ADMIN)
@@ -20,8 +31,12 @@ export class AttendanceController {
   }
 
   @Post('check-absence')
-  async checkAbsence(@Body('date') date?: string, @Query('date') dateQuery?: string) {
-    const dateToCheck = date || dateQuery || new Date().toISOString().slice(0, 10);
+  async checkAbsence(
+    @Body('date') date?: string,
+    @Query('date') dateQuery?: string,
+  ) {
+    const dateToCheck =
+      date || dateQuery || new Date().toISOString().slice(0, 10);
     return this.attendanceService.checkAndFillDailyAbsence(dateToCheck);
   }
 
@@ -38,14 +53,23 @@ export class AttendanceController {
     @Query('year') year: string,
     @Query('search') search?: string,
     @Query('page') page?: string,
-    @Query('limit') limit?: string
+    @Query('limit') limit?: string,
   ) {
     const monthNum = Number(month);
     if (!month || isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
-      return { success: false, message: 'Invalid month. Must be between 1 and 12.' };
+      return {
+        success: false,
+        message: 'Invalid month. Must be between 1 and 12.',
+      };
     }
     const yearToUse = year || new Date().getFullYear().toString();
-    return this.attendanceService.findGrid({ month, year: yearToUse, search, page, limit });
+    return this.attendanceService.findGrid({
+      month,
+      year: yearToUse,
+      search,
+      page,
+      limit,
+    });
   }
 
   @Get('employee/:user_id')
@@ -56,7 +80,11 @@ export class AttendanceController {
     @Query('year') year?: string,
   ) {
     const yearToUse = year || new Date().getFullYear().toString();
-    return this.attendanceService.getEmployeeAttendance({ user_id, month, year: yearToUse });
+    return this.attendanceService.getEmployeeAttendance({
+      user_id,
+      month,
+      year: yearToUse,
+    });
   }
 
   @Get(':id')
@@ -72,7 +100,10 @@ export class AttendanceController {
    * @param id - Attendance record ID (if doesn't exist, will create new record)
    * @param updateAttendanceDto - Attendance data (must include user_id, project_id, and date for creation)
    */
-  update(@Param('id') id: string, @Body() updateAttendanceDto: UpdateAttendanceDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateAttendanceDto: UpdateAttendanceDto,
+  ) {
     return this.attendanceService.update(id, updateAttendanceDto);
   }
 
