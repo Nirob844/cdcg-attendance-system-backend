@@ -86,6 +86,7 @@ export class ProjectService {
           assignees: {
             select: {
               created_at: true,
+              total_cost: true,
               user: {
                 select: {
                   id: true,
@@ -99,14 +100,22 @@ export class ProjectService {
         },
       });
 
-      // Add avatarUrl to each assignee's user
-      const dataWithAvatarUrl = data.map((project) => ({
-        ...project,
-        assignees: project.assignees.map((a) => ({
-          ...a,
-          user: FileUrlHelper.addAvatarUrl(a.user),
-        })),
-      }));
+      // Add avatarUrl to each assignee's user and calculate dynamic cost
+      const dataWithAvatarUrl = data.map((project) => {
+        const computedCost = project.assignees.reduce(
+          (sum, a) => sum + (Number(a.total_cost) || 0),
+          0,
+        );
+        return {
+          ...project,
+          cost: computedCost,
+          assignees: project.assignees.map((a) => ({
+            created_at: a.created_at,
+            total_cost: Number(a.total_cost) || 0,
+            user: FileUrlHelper.addAvatarUrl(a.user),
+          })),
+        };
+      });
 
       return {
         success: true,
