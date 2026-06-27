@@ -56,6 +56,100 @@ export class AttendanceService {
     return `${year}-${month}-${day}`;
   }
 
+  private calculateTimesAndHours(
+    dateInput: string | Date,
+    hoursInput?: number | null,
+    startTimeInput?: string | Date | null,
+    endTimeInput?: string | Date | null,
+    lunchStartInput?: string | Date | null,
+    lunchEndInput?: string | Date | null,
+    existing?: {
+      start_time?: Date | null;
+      end_time?: Date | null;
+      lunch_start?: Date | null;
+      lunch_end?: Date | null;
+    } | null,
+  ) {
+    const targetDate = this.parseDateOnly(dateInput);
+
+    // 1. Determine start_time
+    let start_time: Date | null = null;
+    if (startTimeInput !== undefined && startTimeInput !== null) {
+      start_time = this.parseDateTime(startTimeInput);
+    } else if (existing?.start_time) {
+      start_time = existing.start_time;
+    } else {
+      // Default to 8:00 AM on targetDate
+      start_time = new Date(targetDate);
+      start_time.setUTCHours(8, 0, 0, 0);
+    }
+
+    // 2. Determine lunch times and duration
+    let lunch_start: Date | null = null;
+    let lunch_end: Date | null = null;
+
+    if (lunchStartInput !== undefined && lunchStartInput !== null) {
+      lunch_start = this.parseDateTime(lunchStartInput);
+    } else if (existing && existing.lunch_start !== undefined) {
+      lunch_start = existing.lunch_start;
+    } else if (hoursInput !== undefined && hoursInput !== null) {
+      // Default lunch_start to 12:00 PM if hours are provided
+      lunch_start = new Date(targetDate);
+      lunch_start.setUTCHours(12, 0, 0, 0);
+    }
+
+    if (lunchEndInput !== undefined && lunchEndInput !== null) {
+      lunch_end = this.parseDateTime(lunchEndInput);
+    } else if (existing && existing.lunch_end !== undefined) {
+      lunch_end = existing.lunch_end;
+    } else if (hoursInput !== undefined && hoursInput !== null) {
+      // Default lunch_end to 1:00 PM if hours are provided
+      lunch_end = new Date(targetDate);
+      lunch_end.setUTCHours(13, 0, 0, 0);
+    }
+
+    const lunchDurationMs = (lunch_start && lunch_end) ? (lunch_end.getTime() - lunch_start.getTime()) : 0;
+
+    // 3. Determine hours and end_time
+    let hours = 0;
+    let end_time: Date | null = null;
+
+    if (hoursInput !== undefined && hoursInput !== null) {
+      hours = hoursInput;
+      if (start_time) {
+        end_time = new Date(start_time.getTime() + hours * 60 * 60 * 1000 + lunchDurationMs);
+      }
+    } else {
+      // If hours is not provided, compute from start_time and end_time
+      if (endTimeInput !== undefined && endTimeInput !== null) {
+        end_time = this.parseDateTime(endTimeInput);
+      } else if (existing?.end_time) {
+        end_time = existing.end_time;
+      }
+
+      if (start_time && end_time) {
+        hours = (end_time.getTime() - start_time.getTime()) / (1000 * 60 * 60);
+        if (lunch_start && lunch_end) {
+          hours -= (lunch_end.getTime() - lunch_start.getTime()) / (1000 * 60 * 60);
+        }
+        hours = Math.max(0, hours);
+      }
+    }
+
+    const regular_hours = hours > 8 ? 8 : hours;
+    const extra_hours = hours > 8 ? hours - 8 : 0;
+
+    return {
+      start_time,
+      lunch_start,
+      lunch_end,
+      end_time,
+      hours,
+      regular_hours,
+      extra_hours,
+    };
+  }
+
   async create(dto: CreateAttendanceDto) {
     try {
       // check if project id
@@ -100,35 +194,27 @@ export class AttendanceService {
         if (existing) {
           // If existing is ABSENT, update it to PRESENT
           if (existing.attendance_status === 'ABSENT') {
-            const start_time = this.parseDateTime(dto.start_time);
-            const end_time = this.parseDateTime(dto.end_time);
-            const lunch_start = this.parseDateTime(dto.lunch_start);
-            const lunch_end = this.parseDateTime(dto.lunch_end);
-            let hours = dto.hours;
-            if (start_time && end_time) {
-              hours =
-                (end_time.getTime() - start_time.getTime()) / (1000 * 60 * 60);
-              if (lunch_start && lunch_end) {
-                hours -=
-                  (lunch_end.getTime() - lunch_start.getTime()) /
-                  (1000 * 60 * 60);
-              }
-              hours = Math.max(0, hours);
-            }
-            const regular_hours = hours > 8 ? 8 : hours;
-            const extra_hours = hours > 8 ? hours - 8 : 0;
+            const times = this.calculateTimesAndHours(
+              dto.date,
+              dto.hours,
+              dto.start_time,
+              dto.end_time,
+              dto.lunch_start,
+              dto.lunch_end,
+              existing
+            );
             const updated = await this.prisma.attendance.update({
               where: { id: existing.id },
               data: {
                 attendance_status: 'PRESENT',
                 project_id: dto.project_id,
-                start_time,
-                end_time,
-                lunch_start,
-                lunch_end,
-                hours,
-                regular_hours,
-                extra_hours,
+                start_time: times.start_time,
+                end_time: times.end_time,
+                lunch_start: times.lunch_start,
+                lunch_end: times.lunch_end,
+                hours: times.hours,
+                regular_hours: times.regular_hours,
+                extra_hours: times.extra_hours,
                 notes: dto.notes,
                 address: dto.address,
               },
@@ -170,39 +256,28 @@ export class AttendanceService {
           }
         }
 
-        // Parse times
-        const start_time = this.parseDateTime(dto.start_time);
-        const end_time = this.parseDateTime(dto.end_time);
-        const lunch_start = this.parseDateTime(dto.lunch_start);
-        const lunch_end = this.parseDateTime(dto.lunch_end);
-
-        // Calculate hours if possible
-        let hours = dto.hours;
-        if (start_time && end_time) {
-          hours =
-            (end_time.getTime() - start_time.getTime()) / (1000 * 60 * 60);
-          if (lunch_start && lunch_end) {
-            hours -=
-              (lunch_end.getTime() - lunch_start.getTime()) / (1000 * 60 * 60);
-          }
-          hours = Math.max(0, hours);
-        }
-
-        const regular_hours = hours > 8 ? 8 : hours;
-        const extra_hours = hours > 8 ? hours - 8 : 0;
+        const times = this.calculateTimesAndHours(
+          dto.date,
+          dto.hours,
+          dto.start_time,
+          dto.end_time,
+          dto.lunch_start,
+          dto.lunch_end,
+          null
+        );
 
         const attendance = await this.prisma.attendance.create({
           data: {
             user_id: dto.user_id,
             project_id: dto.project_id,
             date: this.parseDateOnly(dto.date),
-            start_time,
-            lunch_start,
-            lunch_end,
-            end_time,
-            hours,
-            regular_hours,
-            extra_hours,
+            start_time: times.start_time,
+            lunch_start: times.lunch_start,
+            lunch_end: times.lunch_end,
+            end_time: times.end_time,
+            hours: times.hours,
+            regular_hours: times.regular_hours,
+            extra_hours: times.extra_hours,
             attendance_status: dto.attendance_status,
             notes: dto.notes,
             address: dto.address,
@@ -559,7 +634,16 @@ export class AttendanceService {
       // Get the existing attendance record to get project_id and user_id
       const existingAttendance = await this.prisma.attendance.findUnique({
         where: { id },
-        select: { project_id: true, user_id: true },
+        select: {
+          project_id: true,
+          user_id: true,
+          date: true,
+          start_time: true,
+          lunch_start: true,
+          lunch_end: true,
+          end_time: true,
+          hours: true,
+        },
       });
 
       // If attendance record doesn't exist, create a new one
@@ -598,55 +682,41 @@ export class AttendanceService {
           };
         }
 
-        // Set attendance status based on hours
-        let attendance_status = dto.attendance_status;
-        if (dto.hours > 0) {
-          attendance_status = AttendanceStatus.PRESENT;
-        } else {
-          attendance_status = AttendanceStatus.ABSENT;
-        }
+        const times = this.calculateTimesAndHours(
+          dto.date,
+          dto.hours,
+          dto.start_time,
+          dto.end_time,
+          dto.lunch_start,
+          dto.lunch_end,
+          null
+        );
 
+        const attendance_status = times.hours > 0 ? AttendanceStatus.PRESENT : AttendanceStatus.ABSENT;
         const isPresent = attendance_status === AttendanceStatus.PRESENT;
 
-        // Parse times only when present
-        const start_time = isPresent
-          ? this.parseDateTime(dto.start_time)
-          : null;
-        const end_time = isPresent ? this.parseDateTime(dto.end_time) : null;
-        const lunch_start = isPresent
-          ? this.parseDateTime(dto.lunch_start)
-          : null;
-        const lunch_end = isPresent ? this.parseDateTime(dto.lunch_end) : null;
-
-        // Calculate hours if possible
-        let hours = dto.hours || 0;
-        if (isPresent && start_time && end_time) {
-          hours =
-            (end_time.getTime() - start_time.getTime()) / (1000 * 60 * 60);
-          if (lunch_start && lunch_end) {
-            hours -=
-              (lunch_end.getTime() - lunch_start.getTime()) / (1000 * 60 * 60);
-          }
-          hours = Math.max(0, hours);
-        } else if (!isPresent) {
-          hours = 0;
+        if (!isPresent) {
+          times.start_time = null;
+          times.lunch_start = null;
+          times.lunch_end = null;
+          times.end_time = null;
+          times.hours = 0;
+          times.regular_hours = 0;
+          times.extra_hours = 0;
         }
-
-        const regular_hours = hours > 8 ? 8 : hours;
-        const extra_hours = hours > 8 ? hours - 8 : 0;
 
         const data = await this.prisma.attendance.create({
           data: {
             user_id: dto.user_id,
             project_id: dto.project_id,
             date: this.parseDateOnly(dto.date),
-            start_time,
-            lunch_start,
-            lunch_end,
-            end_time,
-            hours,
-            regular_hours,
-            extra_hours,
+            start_time: times.start_time,
+            lunch_start: times.lunch_start,
+            lunch_end: times.lunch_end,
+            end_time: times.end_time,
+            hours: times.hours,
+            regular_hours: times.regular_hours,
+            extra_hours: times.extra_hours,
             attendance_status,
             notes: dto.notes,
             address: dto.address,
@@ -686,51 +756,44 @@ export class AttendanceService {
         return { success: false, message: 'User not assigned to project.' };
       }
 
-      // Set attendance status based on hours
-      if (dto.hours > 0) {
-        dto.attendance_status = AttendanceStatus.PRESENT;
-      } else {
-        dto.attendance_status = AttendanceStatus.ABSENT;
-        dto.hours = 0;
+      const targetDate = dto.date ? this.parseDateOnly(dto.date) : existingAttendance.date;
+
+      const times = this.calculateTimesAndHours(
+        targetDate,
+        dto.hours,
+        dto.start_time,
+        dto.end_time,
+        dto.lunch_start,
+        dto.lunch_end,
+        existingAttendance
+      );
+
+      const attendance_status = times.hours > 0 ? AttendanceStatus.PRESENT : AttendanceStatus.ABSENT;
+      const isPresent = attendance_status === AttendanceStatus.PRESENT;
+
+      if (!isPresent) {
+        times.start_time = null;
+        times.lunch_start = null;
+        times.lunch_end = null;
+        times.end_time = null;
+        times.hours = 0;
+        times.regular_hours = 0;
+        times.extra_hours = 0;
       }
-
-      const isPresent = dto.attendance_status === AttendanceStatus.PRESENT;
-      const start_time = isPresent ? this.parseDateTime(dto.start_time) : null;
-      const lunch_start = isPresent
-        ? this.parseDateTime(dto.lunch_start)
-        : null;
-      const lunch_end = isPresent ? this.parseDateTime(dto.lunch_end) : null;
-      const end_time = isPresent ? this.parseDateTime(dto.end_time) : null;
-
-      // Calculate hours if possible
-      let hours = dto.hours || 0;
-      if (isPresent && start_time && end_time) {
-        hours =
-          (end_time.getTime() - start_time.getTime()) / (1000 * 60 * 60);
-        if (lunch_start && lunch_end) {
-          hours -=
-            (lunch_end.getTime() - lunch_start.getTime()) / (1000 * 60 * 60);
-        }
-        hours = Math.max(0, hours);
-      } else if (!isPresent) {
-        hours = 0;
-      }
-
-      const regular_hours = hours > 8 ? 8 : hours;
-      const extra_hours = hours > 8 ? hours - 8 : 0;
 
       const data = await this.prisma.attendance.update({
         where: { id },
         data: {
           ...dto,
           date: this.parseDateOnly(dto.date),
-          start_time,
-          lunch_start,
-          lunch_end,
-          end_time,
-          hours,
-          regular_hours,
-          extra_hours,
+          start_time: times.start_time,
+          lunch_start: times.lunch_start,
+          lunch_end: times.lunch_end,
+          end_time: times.end_time,
+          hours: times.hours,
+          regular_hours: times.regular_hours,
+          extra_hours: times.extra_hours,
+          attendance_status,
         },
         include: {
           user: {
