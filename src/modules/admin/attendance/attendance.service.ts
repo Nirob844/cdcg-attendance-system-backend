@@ -5,6 +5,7 @@ import { UpdateAttendanceDto } from './dto/update-attendance.dto';
 import { toUtc } from 'src/common/helper/timezone.helper';
 import { Cron } from '@nestjs/schedule';
 import { AttendanceStatus } from './dto/attendance-status.enum';
+import { FileUrlHelper } from 'src/common/helper/file-url.helper';
 
 @Injectable()
 export class AttendanceService {
@@ -306,7 +307,7 @@ export class AttendanceService {
         const attendance = await this.prisma.attendance.create({
           data: {
             user_id: dto.user_id,
-            project_id: dto.project_id,
+            project_id: null,
             date: this.parseDateOnly(dto.date),
             attendance_status: dto.attendance_status,
             hours: 0,
@@ -321,9 +322,6 @@ export class AttendanceService {
           'attendence create data ========================>>>>>>>>>>>>>>',
           attendance,
         );
-
-        // Update project assignee total hours and cost (0 hours, 0 cost for ABSENT)
-        await this.updateProjectAssigneeTotals(dto.project_id, dto.user_id);
 
         return { success: true, data: attendance };
       }
@@ -441,7 +439,8 @@ export class AttendanceService {
               };
             }
           });
-        return { user, days };
+        const userWithAvatar = FileUrlHelper.addAvatarUrl(user);
+        return { user: userWithAvatar, days };
       });
       return {
         success: true,
@@ -695,6 +694,7 @@ export class AttendanceService {
         const attendance_status = times.hours > 0 ? AttendanceStatus.PRESENT : AttendanceStatus.ABSENT;
         const isPresent = attendance_status === AttendanceStatus.PRESENT;
 
+        let project_id = dto.project_id;
         if (!isPresent) {
           times.start_time = null;
           times.lunch_start = null;
@@ -703,12 +703,13 @@ export class AttendanceService {
           times.hours = 0;
           times.regular_hours = 0;
           times.extra_hours = 0;
+          project_id = null;
         }
 
         const data = await this.prisma.attendance.create({
           data: {
             user_id: dto.user_id,
-            project_id: dto.project_id,
+            project_id,
             date: this.parseDateOnly(dto.date),
             start_time: times.start_time,
             lunch_start: times.lunch_start,
@@ -735,7 +736,9 @@ export class AttendanceService {
         });
 
         // Update project assignee total hours and cost
-        await this.updateProjectAssigneeTotals(dto.project_id, dto.user_id);
+        if (project_id) {
+          await this.updateProjectAssigneeTotals(project_id, dto.user_id);
+        }
 
         return {
           success: true,
@@ -771,6 +774,7 @@ export class AttendanceService {
       const attendance_status = times.hours > 0 ? AttendanceStatus.PRESENT : AttendanceStatus.ABSENT;
       const isPresent = attendance_status === AttendanceStatus.PRESENT;
 
+      let project_id = dto.project_id;
       if (!isPresent) {
         times.start_time = null;
         times.lunch_start = null;
@@ -779,6 +783,7 @@ export class AttendanceService {
         times.hours = 0;
         times.regular_hours = 0;
         times.extra_hours = 0;
+        project_id = null;
       }
 
       const data = await this.prisma.attendance.update({
@@ -786,6 +791,7 @@ export class AttendanceService {
         data: {
           ...dto,
           date: this.parseDateOnly(dto.date),
+          project_id,
           start_time: times.start_time,
           lunch_start: times.lunch_start,
           lunch_end: times.lunch_end,
@@ -809,26 +815,30 @@ export class AttendanceService {
       });
 
       // Check if project_id changed
-      const projectIdChanged =
-        dto.project_id && dto.project_id !== existingAttendance.project_id;
+      const oldProjectId = existingAttendance.project_id;
+      const newProjectId = project_id;
 
-      if (projectIdChanged) {
-        // Update old project totals (hours will be removed automatically since project_id changed)
-        await this.updateProjectAssigneeTotals(
-          existingAttendance.project_id,
-          existingAttendance.user_id,
-        );
-        // Update new project totals (hours will be added automatically)
-        await this.updateProjectAssigneeTotals(
-          dto.project_id,
-          existingAttendance.user_id,
-        );
+      if (newProjectId !== oldProjectId) {
+        if (oldProjectId) {
+          await this.updateProjectAssigneeTotals(
+            oldProjectId,
+            existingAttendance.user_id,
+          );
+        }
+        if (newProjectId) {
+          await this.updateProjectAssigneeTotals(
+            newProjectId,
+            existingAttendance.user_id,
+          );
+        }
       } else {
-        // Project didn't change, just update the current project totals
-        await this.updateProjectAssigneeTotals(
-          data.project_id,
-          existingAttendance.user_id,
-        );
+        // Project didn't change
+        if (newProjectId) {
+          await this.updateProjectAssigneeTotals(
+            newProjectId,
+            existingAttendance.user_id,
+          );
+        }
       }
 
       return { success: true, data, message: 'Attendance record updated' };
