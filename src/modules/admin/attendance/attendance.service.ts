@@ -90,7 +90,7 @@ export class AttendanceService {
 
     if (lunchStartInput !== undefined && lunchStartInput !== null) {
       lunch_start = this.parseDateTime(lunchStartInput);
-    } else if (existing && existing.lunch_start !== undefined) {
+    } else if (existing?.lunch_start) {
       lunch_start = existing.lunch_start;
     } else if (hoursInput !== undefined && hoursInput !== null) {
       // Default lunch_start to 12:00 PM if hours are provided
@@ -100,7 +100,7 @@ export class AttendanceService {
 
     if (lunchEndInput !== undefined && lunchEndInput !== null) {
       lunch_end = this.parseDateTime(lunchEndInput);
-    } else if (existing && existing.lunch_end !== undefined) {
+    } else if (existing?.lunch_end) {
       lunch_end = existing.lunch_end;
     } else if (hoursInput !== undefined && hoursInput !== null) {
       // Default lunch_end to 1:00 PM if hours are provided
