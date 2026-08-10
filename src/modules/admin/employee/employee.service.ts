@@ -303,7 +303,6 @@ export class EmployeeService {
             },
             where: { date: { gte: startDate, lte: endDate } },
             orderBy: { date: 'desc' },
-            take: 30,
           },
         },
       });
